@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Kartu Keluarga</title>
+    <title>Kartu Keluarga {{ $keluarga->no_kk }}</title>
     <style>
         body {
             font-family: 'DejaVu Sans', sans-serif;
@@ -110,6 +110,7 @@
                 <th>NIK</th>
                 <th>Jenis Kelamin</th>
                 <th>Tempat & Tanggal Lahir</th>
+                <th>Usia</th>
                 <th>Agama</th>
                 <th>Pendidikan</th>
                 <th>Pekerjaan</th>
@@ -126,8 +127,16 @@
                     <td>{{ $anggota->nik }}</td>
                     <td>{{ $anggota->jenis_kelamin }}</td>
                     <td>{{ $anggota->tempat_lahir }},
-                        {{ \Carbon\Carbon::parse($anggota->tanggal_lahir)->translatedFormat('d M
-                                  Y') }}</td>
+                        {{ \Carbon\Carbon::parse($anggota->tanggal_lahir)->translatedFormat('d M Y') }}
+                    </td>
+
+                    @php
+                        $dob = \Carbon\Carbon::parse($anggota->tanggal_lahir);
+                        $now = \Carbon\Carbon::now();
+                        $diff = $dob->diff($now);
+                    @endphp
+                    <td>{{ $diff->y }} tahun {{ $diff->m }} bulan {{ $diff->d }} hari</td>
+
                     <td>{{ $anggota->agama }}</td>
                     <td>{{ $anggota->pendidikan }}</td>
                     <td>{{ $anggota->pekerjaan }}</td>
