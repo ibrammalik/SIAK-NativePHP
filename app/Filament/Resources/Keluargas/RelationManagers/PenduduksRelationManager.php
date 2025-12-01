@@ -11,7 +11,6 @@ use Filament\Actions\EditAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Livewire\Component;
 
 class PenduduksRelationManager extends RelationManager
 {
@@ -107,8 +106,13 @@ class PenduduksRelationManager extends RelationManager
                     ]))
                     ->openUrlInNewTab(false),
 
-                // refine
                 FilamentExportHeaderAction::make('export')
+                    ->fileName('Keluarga_' . $this->getOwnerRecord()->no_kk . '_' . now()->format('Y-m-d'))
+                    ->disableFileNamePrefix()
+                    ->disableCsv()
+                    ->defaultFormat('pdf')
+                    ->defaultPageOrientation('landscape')
+                    ->disableAdditionalColumns()
                     ->modifyPdfWriter(function ($writer) {
                         // get the parent 'Keluarga' model from the relation manager
                         $keluarga = $this->getOwnerRecord();
@@ -121,7 +125,7 @@ class PenduduksRelationManager extends RelationManager
 
                         return $writer
                             ->loadHTML($html)
-                            ->setPaper('A4', 'landscape')
+                            ->setPaper('A4')
                             ->setOption('isHtml5ParserEnabled', true)
                             ->setOption('dpi', 150);
                     }),
