@@ -4,19 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Rw extends Model
+class RW extends Model
 {
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
-    protected $fillable = [
-        'nomor',
-    ];
+    protected $table = 'rws';
+    protected $fillable = ['nomor'];
 
-    public function rts()
+    public function layer()
     {
-        return $this->hasMany(Rt::class);
+        return $this->hasOne(Layer::class);
+    }
+
+    public function ketua()
+    {
+        return $this->belongsTo(Penduduk::class, 'ketua_id');
+    }
+
+    public function rt()
+    {
+        return $this->hasMany(RT::class, 'rw_id');
     }
 }

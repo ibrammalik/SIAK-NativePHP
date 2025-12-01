@@ -2,28 +2,33 @@
 
 namespace App\Policies;
 
+use App\Enums\UserRole;
+use App\Models\RW;
 use App\Models\User;
-use App\Models\Rw;
-use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Auth\Access\Response;
 
-class RwPolicy
+class RWPolicy
 {
-    use HandlesAuthorization;
-
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_rw');
+        return in_array($user->role, [
+            UserRole::SuperAdmin,
+            UserRole::AdminKelurahan,
+            UserRole::KetuaRW,
+        ]);
     }
 
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Rw $rw): bool
+    public function view(User $user, RW $rw): bool
     {
-        return $user->can('view_rw');
+        if ($user->isSuperAdmin() || $user->isKelurahan()) return true;
+        if ($user->isRW() && $user->rw_id === $rw->id) return true;
+        return false;
     }
 
     /**
@@ -31,78 +36,47 @@ class RwPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_rw');
+        if ($user->isSuperAdmin() || $user->isKelurahan()) return true;
+        return false;
     }
 
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, Rw $rw): bool
+    public function update(User $user, RW $rW): bool
     {
-        return $user->can('update_rw');
+        if ($user->isSuperAdmin() || $user->isKelurahan()) return true;
+        return false;
     }
 
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Rw $rw): bool
+    public function delete(User $user, RW $rW): bool
     {
-        return $user->can('delete_rw');
+        if ($user->isSuperAdmin() || $user->isKelurahan()) return true;
+        return false;
     }
 
-    /**
-     * Determine whether the user can bulk delete.
-     */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_rw');
+        if ($user->isSuperAdmin() || $user->isKelurahan()) return true;
+        return false;
     }
 
     /**
-     * Determine whether the user can permanently delete.
+     * Determine whether the user can restore the model.
      */
-    public function forceDelete(User $user, Rw $rw): bool
+    public function restore(User $user, RW $rW): bool
     {
-        return $user->can('force_delete_rw');
+        return false;
     }
 
     /**
-     * Determine whether the user can permanently bulk delete.
+     * Determine whether the user can permanently delete the model.
      */
-    public function forceDeleteAny(User $user): bool
+    public function forceDelete(User $user, RW $rW): bool
     {
-        return $user->can('force_delete_any_rw');
-    }
-
-    /**
-     * Determine whether the user can restore.
-     */
-    public function restore(User $user, Rw $rw): bool
-    {
-        return $user->can('restore_rw');
-    }
-
-    /**
-     * Determine whether the user can bulk restore.
-     */
-    public function restoreAny(User $user): bool
-    {
-        return $user->can('restore_any_rw');
-    }
-
-    /**
-     * Determine whether the user can replicate.
-     */
-    public function replicate(User $user, Rw $rw): bool
-    {
-        return $user->can('replicate_rw');
-    }
-
-    /**
-     * Determine whether the user can reorder.
-     */
-    public function reorder(User $user): bool
-    {
-        return $user->can('reorder_rw');
+        return false;
     }
 }

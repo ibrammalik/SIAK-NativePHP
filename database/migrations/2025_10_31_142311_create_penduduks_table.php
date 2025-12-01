@@ -1,0 +1,42 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('penduduks', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('keluarga_id')->nullable()->constrained('keluargas')->nullOnDelete();
+            $table->foreignId('rw_id')->nullable()->constrained('rws')->nullOnDelete();
+            $table->foreignId('rt_id')->nullable()->constrained('rts')->nullOnDelete();
+            $table->string('nik')->unique();
+            $table->string('nama');
+            $table->string('no_telp')->nullable();
+            $table->string('tempat_lahir')->nullable();
+            $table->date('tanggal_lahir')->nullable();
+            $table->string('jenis_kelamin');
+            $table->string('agama')->nullable();
+            $table->string('pendidikan')->nullable();
+            $table->string('status_perkawinan')->nullable();
+            $table->string('pekerjaan')->nullable();
+            $table->string('status_kependudukan')->nullable();
+            $table->string('shdk')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('penduduks');
+    }
+};

@@ -4,17 +4,15 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-use Filament\Models\Contracts\FilamentUser;
-use Filament\Panel;
+use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -25,6 +23,10 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
+        'role',
+        'rw_id',
+        'rt_id',
+        'penduduk_id',
     ];
 
     /**
@@ -47,21 +49,44 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'role' => UserRole::class,
         ];
     }
 
-    public function canAccessPanel(Panel $panel): bool
+    // 🔗 Relasi wilayah dan penduduk
+
+    public function isSuperAdmin(): bool
     {
-        return true;
+        return $this->role === UserRole::SuperAdmin;
+    }
+
+    public function isKelurahan(): bool
+    {
+        return $this->role === UserRole::AdminKelurahan;
+    }
+
+    public function isRW(): bool
+    {
+        return $this->role === UserRole::KetuaRW;
+    }
+
+    public function isRT(): bool
+    {
+        return $this->role === UserRole::KetuaRT;
     }
 
     public function rw()
     {
-        return $this->belongsTo(Rw::class);
+        return $this->belongsTo(RW::class);
     }
 
     public function rt()
     {
-        return $this->belongsTo(Rt::class);
+        return $this->belongsTo(RT::class);
+    }
+
+    public function penduduk()
+    {
+        return $this->belongsTo(Penduduk::class);
     }
 }

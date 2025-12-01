@@ -1,128 +1,149 @@
 <!DOCTYPE html>
-<html lang="id" class="scroll-smooth"
-    x-data="{ dark: window.matchMedia('(prefers-color-scheme: dark)').matches }"
-    x-bind:class="{ 'dark': dark }"
-    x-init="$watch('dark', val => localStorage.setItem('theme', val ? 'dark' : 'light'))"
-    x-cloak>
+<html lang="id" class="scroll-smooth">
 
 <head>
     <meta charset="UTF-8">
-    <title>{{ config('app.name', 'ESKEPAL') }}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Tailwind -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: '#DC2626',
-                    }
-                }
-            }
-        }
-    </script>
+    <title>{{ $title }} - SIAK {{ $nama_kelurahan }}</title>
 
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
-        defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script
-        src="https://cdn.jsdelivr.net/npm/countup.js@2.6.2/dist/countUp.umd.js">
-    </script>
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+    <!-- Styles / Scripts -->
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('styles')
+    @livewireStyles
 </head>
 
-<body
-    class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
+<body class="bg-gray-50 text-gray-800">
 
-    <!-- Navbar -->
-    <header class="bg-white dark:bg-gray-800 shadow">
-        <div
-            class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <img src="{{ asset('images/logo-icon.svg') }}" alt="Logo"
-                    class="w-10 h-10">
-                <span
-                    class="text-xl font-bold text-brand dark:text-brand">ESKEPAL</span>
-            </div>
-            <div class="flex items-center space-x-4">
-                <button id="darkToggle"
-                    class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-transform duration-500 ease-in-out transform active:scale-90">
-                    <!-- Icon Sun -->
-                    <svg id="iconLight"
-                        class="w-5 h-5 hidden dark:block transition-transform duration-500 ease-in-out"
-                        xmlns="http://www.w3.org/2000/svg" fill="none"
-                        viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M12 3v1m0 16v1m8.66-12.34l-.71.7M4.05 19.95l.7-.7M21 12h1M3 12H2m16.95 7.95l-.7-.7M4.05 4.05l.7.7M12 5a7 7 0 100 14 7 7 0 000-14z" />
-                    </svg>
-                    <!-- Icon Moon -->
-                    <svg id="iconDark"
-                        class="w-5 h-5 block dark:hidden transition-transform duration-500 ease-in-out"
-                        xmlns="http://www.w3.org/2000/svg" fill="none"
-                        viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
-                    </svg>
-                </button>
+    {{-- Navbar --}}
+    <nav x-data="{ open: false }"
+        class="fixed w-full z-50 {{ request()->routeIs('beranda') ? 'bg-transparent' : 'bg-green-700' }} transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <!-- Logo -->
+            <a href="/" wire:navigate.hover
+                class="flex items-center gap-2 text-1xl font-semibold text-white hover:text-green-200 transition">
+                <!-- SVG Logo -->
+                <img src="/images/logo.svg" alt="Logo" class="h-8">
 
-                <a href="/admin/login"
-                    class="bg-brand text-white px-4 py-2 rounded hover:bg-red-700">Login</a>
-            </div>
+                <!-- Text -->
+                <span>{{ $nama_kelurahan }}</span>
+            </a>
+
+            <!-- Desktop Menu -->
+            <ul class="hidden md:flex gap-6 font-medium">
+                @php
+                    $links = ['beranda', 'profil', 'infografis', 'peta', 'kontak'];
+                @endphp
+                @foreach ($links as $link)
+                    <li>
+                        <a wire:navigate.hover href="{{ route($link) }}"
+                            class="text-white border-b-2 {{ request()->routeIs($link) ? 'border-white' : 'border-transparent' }} hover:border-white transition capitalize">
+                            {{ $link }}
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+
+            <!-- Mobile Menu Button -->
+            <button @click="open = !open" class="md:hidden text-white text-2xl focus:outline-none">
+                <i :class="open ? 'fa-solid fa-xmark' : 'fa-solid fa-bars'"></i>
+            </button>
         </div>
-    </header>
 
+        <!-- Mobile Dropdown Menu -->
+        <div x-show="open" x-transition class="md:hidden bg-green-700 text-white px-6 pb-4 space-y-3">
+            @foreach ($links as $link)
+                <a wire:navigate.hover href="{{ route($link) }}"
+                    class="block py-2 border-b border-green-600 capitalize {{ request()->routeIs($link) ? 'font-semibold' : '' }}">
+                    {{ $link }}
+                </a>
+            @endforeach
+        </div>
+    </nav>
 
-    <!-- Main -->
-    <main>
-        @yield('content')
+    <main class="min-h-screen">
+        {{ $slot }}
     </main>
 
-    <!-- Footer -->
-    <footer class="text-center py-6 text-gray-500 dark:text-gray-400 text-sm">
-        &copy; {{ date('Y') }} ESKEPAL - Elektronik Sistem Kependudukan
-        Kalicari.
+    {{-- Footer --}}
+    <footer class="relative bg-green-700 text-gray-200 mt-16">
+        <div class="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-4 gap-8">
+
+            <!-- Profil Kelurahan -->
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-3">
+                    SIAK {{ $nama_kelurahan }}
+                </h4>
+                <p class="text-sm leading-relaxed">
+                    {{ $deskripsi ??
+                        'Sistem Informasi Administrasi Kependudukan (SIAK) Kelurahan ini menyajikan data dan informasi kependudukan secara digital, cepat, dan transparan.' }}
+                </p>
+            </div>
+
+            <!-- Kontak -->
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-3">Kontak</h4>
+                <ul class="space-y-2 text-sm">
+                    <li>{{ $alamat }}</li>
+                    <li>{{ $telepon }}</li>
+                    <li>{{ $email }}</li>
+                </ul>
+            </div>
+
+            <!-- Navigasi -->
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-3">Navigasi</h4>
+                <ul class="space-y-2 text-sm">
+                    @foreach ($links as $link)
+                        <li><a wire:navigate.hover href="{{ route($link) }}"
+                                class="hover:text-white transition capitalize">{{ $link }}</a>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+
+            <!-- Media Sosial -->
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-3">Ikuti Kami</h4>
+                <div class="flex space-x-4 text-xl">
+                    <a href="#" class="hover:text-green-400 transition"><i class="fa-brands fa-facebook"></i></a>
+                    <a href="#" class="hover:text-green-400 transition"><i class="fa-brands fa-twitter"></i></a>
+                    <a href="#" class="hover:text-green-400 transition"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" class="hover:text-green-400 transition"><i class="fa-brands fa-youtube"></i></a>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="border-t border-white mt-6">
+            <div class="text-center text-sm text-white py-4">
+                &copy; {{ date('Y') }} {{ $nama_kelurahan }}.
+                Semua hak dilindungi.
+                <br>
+                <span class="text-xs text-white">Dikelola oleh Sistem Informasi
+                    Administrasi Kependudukan (SIAK) {{ $nama_kelurahan }}</span>
+            </div>
+        </div>
+
+        @auth
+            <a href="{{ route('filament.app.pages.dashboard') }}"
+                class="absolute left-4 bottom-4 text-[10px] text-gray-400 opacity-50 hover:opacity-100 transition">
+                App Dashboard
+            </a>
+        @else
+            <a href="{{ route('filament.app.auth.login') }}"
+                class="absolute left-4 bottom-4 text-[10px] text-gray-400 opacity-50 hover:opacity-100 transition">
+                Login Pengelola
+            </a>
+        @endauth
     </footer>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-        const toggle = document.getElementById('darkToggle');
-        const iconLight = document.getElementById('iconLight');
-        const iconDark = document.getElementById('iconDark');
-
-        toggle.addEventListener('click', () => {
-            // Animasi hanya icon yang aktif
-            const activeIcon = document.documentElement.classList.contains('dark') ? iconLight : iconDark;
-            activeIcon.classList.add('transform', 'rotate-180', 'scale-125');
-            setTimeout(() => {
-                activeIcon.classList.remove('rotate-180', 'scale-125');
-            }, 400);
-
-            // Delay pergantian mode agar animasi terlihat smooth
-            setTimeout(() => {
-                if (document.documentElement.classList.contains('dark')) {
-                    document.documentElement.classList.remove('dark');
-                    localStorage.theme = 'light';
-                } else {
-                    document.documentElement.classList.add('dark');
-                    localStorage.theme = 'dark';
-                }
-            }, 100);
-        });
-
-        // Inisialisasi dark mode sesuai preferensi
-        if (localStorage.theme === 'dark' ||
-            (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    });
-    </script>
-
+    @stack('scripts')
+    @livewireScripts
 </body>
 
 </html>

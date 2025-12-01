@@ -2,68 +2,42 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Scopes\RoleFilterScope;
 use Illuminate\Database\Eloquent\Model;
 
 class Penduduk extends Model
 {
-    use HasFactory;
-
+    protected $table = 'penduduks';
     protected $fillable = [
+        'keluarga_id',
+        'rw_id',
+        'rt_id',
         'nik',
         'nama',
-        'alamat',
-        'jenis_kelamin',
-        'tanggal_lahir',
         'tempat_lahir',
-        'rt_id',
-        'rw_id',
-        'agama_id',
-        'pekerjaan_id',
-        'status_perkawinan_id',
-        'status_kependudukan_id',
-        'pendidikan_id',
-        'no_kk',
+        'tanggal_lahir',
+        'jenis_kelamin',
+        'agama',
+        'pendidikan',
+        'status_perkawinan',
+        'pekerjaan',
+        'status_kependudukan',
         'shdk',
+        'no_telp'
     ];
+
+    public function keluarga()
+    {
+        return $this->belongsTo(Keluarga::class);
+    }
 
     public function rw()
     {
-        return $this->belongsTo(\App\Models\Rw::class);
+        return $this->belongsTo(RW::class);
     }
 
     public function rt()
     {
-        return $this->belongsTo(\App\Models\Rt::class);
-    }
-
-    public function agama()
-    {
-        return $this->belongsTo(\App\Models\Agama::class);
-    }
-
-    public function pekerjaan()
-    {
-        return $this->belongsTo(\App\Models\Pekerjaan::class);
-    }
-
-    public function statusPerkawinan()
-    {
-        return $this->belongsTo(\App\Models\StatusPerkawinan::class);
-    }
-
-    public function statusKependudukan()
-    {
-        return $this->belongsTo(\App\Models\StatusKependudukan::class);
-    }
-
-    public function pendidikan()
-    {
-        return $this->belongsTo(Pendidikan::class);
-    }
-
-    public function anggotaKeluarga()
-    {
-        return $this->hasMany(Penduduk::class, 'no_kk', 'no_kk');
+        return $this->belongsTo(RT::class);
     }
 }

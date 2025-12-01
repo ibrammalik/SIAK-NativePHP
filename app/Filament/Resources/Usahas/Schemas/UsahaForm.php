@@ -1,0 +1,110 @@
+<?php
+
+namespace App\Filament\Resources\Usahas\Schemas;
+
+use App\Enums\KategoriUsaha;
+use App\Enums\SubkategoriUsaha;
+use App\Models\RT;
+use App\Models\RW;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
+
+class UsahaForm
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Select::make('kategori')
+                    ->label('Kategori')
+                    ->options(KategoriUsaha::class)
+                    ->native(false)
+                    ->live()
+                    ->afterStateUpdated(function ($set) {
+                        $set('subkategori', null);
+                        $set('subkategori_lainnya', null);
+                    })
+                    ->required()
+                    ->hintIcon('heroicon-o-information-circle')
+                    ->hintIconTooltip('Pilih kategori utama usaha'),
+
+                Select::make('subkategori')
+                    ->label('Sub Kategori')
+                    ->options(
+                        fn($get) => collect(SubkategoriUsaha::byKategori($get('kategori')))
+                            ->mapWithKeys(fn(SubkategoriUsaha $item) => [
+                                $item->value => $item->getLabel(),
+                            ])
+                            ->toArray()
+                    )
+                    ->native(false)
+                    ->live()
+                    ->required()
+                    ->hintIcon('heroicon-o-information-circle')
+                    ->hintIconTooltip('Pilih subkategori sesuai jenis usaha. Jika subkategori tidak ada, pilih "Lainnya"'),
+
+                TextInput::make('subkategori_lainnya')
+                    ->label('Sub Kategori Lainnya')
+                    ->visible(fn($get) => $get('subkategori') === SubkategoriUsaha::LAINNYA->value)
+                    ->columnSpanFull()
+                    ->hintIcon('heroicon-o-information-circle')
+                    ->hintIconTooltip('Isi jika subkategori belum tersedia'),
+
+                TextInput::make('nama')
+                    ->label('Nama Usaha')
+                    ->columnSpanFull()
+                    ->required()
+                    ->hint('Nama usaha sesuai dengan dokumen resmi jika ada')
+                    ->helperText('Contoh: Toko Sumber Makmur'),
+
+                TextInput::make('nama_pemilik')
+                    ->label('Nama Pemilik')
+                    ->columnSpanFull()
+                    ->required()
+                    ->hint('Nama pemilik usaha')
+                    ->helperText('Contoh: Budi Santoso'),
+
+                Select::make('rw_id')
+                    ->label('RW')
+                    ->relationship('rw', 'nomor', modifyQueryUsing: function (Builder $query) {
+                        $user = auth()->user();
+                        if ($user->isRW() || $user->isRT()) {
+                            $query->where('id', $user->rw_id);
+                        }
+                    })
+                    ->getOptionLabelFromRecordUsing(fn(RW $rw) => "RW {$rw->nomor}")
+                    ->afterStateUpdated(fn(callable $set) => $set('rt_id', null))
+                    ->live()
+                    ->preload()
+                    ->searchable()
+                    ->required()
+                    ->hintIcon('heroicon-o-map')
+                    ->hintIconTooltip('Pilih RW tempat usaha berada. RW mempengaruhi daftar RT yang tersedia'),
+
+                Select::make('rt_id')
+                    ->label('RT')
+                    ->preload()
+                    ->searchable()
+                    ->required()
+                    ->relationship('rt', 'nomor', modifyQueryUsing: function (Builder $query, $get) {
+                        $user = auth()->user();
+                        $query->where('rw_id', $get('rw_id'));
+
+                        if ($user->isRT()) {
+                            $query->where('id', $user->rt_id);
+                        }
+                    })
+                    ->getOptionLabelFromRecordUsing(fn(RT $rt) => "RT {$rt->nomor}")
+                    ->hintIconTooltip('Pilih RT sesuai RW yang dipilih')
+                    ->hintIcon('heroicon-o-map'),
+
+                Textarea::make('alamat')
+                    ->columnSpanFull()
+                    ->required()
+                    ->hint('Alamat lengkap usaha'),
+            ]);
+    }
+}
