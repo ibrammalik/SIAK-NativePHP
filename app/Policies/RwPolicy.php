@@ -36,7 +36,7 @@ class RWPolicy
      */
     public function create(User $user): bool
     {
-        if ($user->isSuperAdmin() || $user->isKelurahan()) return true;
+        if ($user->isSuperAdmin() || $user->isKelurahan() || $user->isRW()) return true;
         return false;
     }
 
