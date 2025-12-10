@@ -16,11 +16,15 @@ class UsahasTable
         return $table
             ->columns([
                 TextColumn::make('nama')
-                    ->label('Nama Usaha')
+                    ->label('Nama')
                     ->searchable(),
 
-                TextColumn::make('kategori')
-                    ->badge()
+                TextColumn::make('kategoriUsaha.name')
+                    ->label('Kategori')
+                    ->searchable(),
+
+                TextColumn::make('subkategoriUsaha.name')
+                    ->label('Subkategori')
                     ->searchable(),
 
                 TextColumn::make('nama_pemilik')

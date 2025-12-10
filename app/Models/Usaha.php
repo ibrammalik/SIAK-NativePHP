@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\KategoriUsaha;
-use App\Enums\SubkategoriUsaha;
 use Illuminate\Database\Eloquent\Model;
 
 class Usaha extends Model
@@ -11,19 +9,13 @@ class Usaha extends Model
     protected $table = 'usahas';
 
     protected $fillable = [
-        'kategori',
-        'subkategori',
-        'subkategori_lainnya',
+        'kategori_usaha_id',
+        'subkategori_usaha_id',
         'nama',
         'nama_pemilik',
         'alamat',
         'rw_id',
         'rt_id',
-    ];
-
-    protected $casts = [
-        'kategori' => KategoriUsaha::class,
-        'subkategori' =>  SubkategoriUsaha::class,
     ];
 
     public function rw()
@@ -34,5 +26,15 @@ class Usaha extends Model
     public function rt()
     {
         return $this->belongsTo(RT::class);
+    }
+
+    public function kategoriUsaha()
+    {
+        return $this->belongsTo(KategoriUsaha::class);
+    }
+
+    public function subkategoriUsaha()
+    {
+        return $this->belongsTo(SubkategoriUsaha::class);
     }
 }
