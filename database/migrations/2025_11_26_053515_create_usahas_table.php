@@ -14,9 +14,8 @@ return new class extends Migration
         Schema::create('usahas', function (Blueprint $table) {
             $table->id();
 
-            $table->string('kategori');
-            $table->string('subkategori');
-            $table->string('subkategori_lainnya')->nullable();
+            $table->foreignId('kategori_usaha_id')->nullable()->constrained('kategori_usahas')->nullOnDelete();
+            $table->foreignId('subkategori_usaha_id')->nullable()->constrained('subkategori_usahas')->nullOnDelete();
 
             $table->string('nama');
             $table->string('nama_pemilik');

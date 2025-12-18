@@ -2,12 +2,15 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Middleware\CheckKetuaRw;
 use Filament\Actions\Action;
 use Filament\Auth\Pages\Login;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationBuilder;
+use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -46,6 +49,7 @@ class AdminPanelProvider extends PanelProvider
                 'Data Monografi',
                 'Peta',
                 'Pengaturan',
+                'Master Data',
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
@@ -67,6 +71,7 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                CheckKetuaRw::class,
             ])
             ->authMiddleware([
                 Authenticate::class,
@@ -83,6 +88,17 @@ class AdminPanelProvider extends PanelProvider
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->sidebarCollapsibleOnDesktop()
             ->resourceEditPageRedirect('index')
-            ->resourceCreatePageRedirect('index');
+            ->resourceCreatePageRedirect('index')
+            ->navigationItems([
+                NavigationItem::make('Tutorial')
+                    ->url('https://docs.google.com/document/d/1yeIRQgup_77i6oZBuaNyH5G2QX91BbvfHcG1CbnRrGc/edit?usp=sharing')
+                    ->icon('heroicon-o-book-open')
+                    ->openUrlInNewTab(),
+
+                NavigationItem::make('Bantuan WA')
+                    ->url('https://wa.me/62895341250608')
+                    ->icon('heroicon-o-phone')
+                    ->openUrlInNewTab(),
+            ]);
     }
 }

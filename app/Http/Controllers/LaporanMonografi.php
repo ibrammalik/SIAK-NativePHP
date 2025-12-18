@@ -3,15 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Enums\JenisKelamin;
-use App\Enums\KategoriFasilitas;
-use App\Enums\KategoriUsaha;
 use App\Enums\Shdk;
-use App\Enums\SubkategoriFasilitas;
-use App\Enums\SubkategoriUsaha;
-use App\Models\Keluarga;
+use App\Models\KategoriFasilitas;
+use App\Models\KategoriUsaha;
+use App\Models\Pekerjaan;
 use App\Models\Penduduk;
 use App\Models\RT;
 use App\Models\RW;
+use App\Models\SubkategoriFasilitas;
+use App\Models\SubkategoriUsaha;
+use App\Models\Usaha;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -71,23 +72,23 @@ class LaporanMonografi extends Controller
         }
     }
 
-    public static function getData($type, $id)
+    public static function getData($wilayah, $id)
     {
         $penduduks = Penduduk::select([
             'id',
             'keluarga_id',
             'jenis_kelamin',
             'tanggal_lahir',
-            'pekerjaan',
+            'pekerjaan_id',
             'pendidikan',
             'agama',
             'status_perkawinan',
             'shdk',
         ])
-            ->when($type === 'rw' && $id, function (Builder $query) use ($id) {
+            ->when($wilayah === 'rw' && $id, function (Builder $query) use ($id) {
                 $query->where('rw_id', $id);
             })
-            ->when($type === 'rt' && $id, function (Builder $query) use ($id) {
+            ->when($wilayah === 'rt' && $id, function (Builder $query) use ($id) {
                 $query->where('rt_id', $id);
             })
             ->get();
@@ -152,21 +153,9 @@ class LaporanMonografi extends Controller
         }
 
         // default pekerjaan (tambahkan sesuai kebutuhan)
-        $defaultPekerjaan = [
-            'Petani Sendiri',
-            'Buruh Tani',
-            'Nelayan',
-            'Pengusaha',
-            'Buruh Industri',
-            'Buruh Bangunan',
-            'Dagang',
-            'Pengangkutan',
-            'ASN',
-            'Polri',
-            'TNI',
-            'Pensiunan',
-            'Lain-lain',
-        ];
+        $defaultPekerjaan = Pekerjaan::pluck('name', 'id')->toArray();
+
+        $defaultPekerjaan[null] = 'Belum diisi';
 
         // pekerjaan dihitung jika umur >= 10
         $pendudukPekerjaan = $penduduks->filter(function ($p) {
@@ -176,28 +165,18 @@ class LaporanMonografi extends Controller
         // group berdasarkan pekerjaannya
         $pekerjaanGrouped = $pendudukPekerjaan
             ->groupBy(function ($p) {
-                return trim($p->pekerjaan ?? 'Lain-lain');
+                return $p->pekerjaan_id;
             })
             ->map->count()
             ->toArray();
 
         // susun format final
         $pekerjaanFinal = [];
-        foreach ($defaultPekerjaan as $jenis) {
+        foreach ($defaultPekerjaan as $pekerjaan_id => $name) {
             $pekerjaanFinal[] = [
-                'jenis' => $jenis,
-                'jumlah' => $pekerjaanGrouped[$jenis] ?? 0,
+                'jenis' => $name,
+                'jumlah' => $pekerjaanGrouped[$pekerjaan_id] ?? 0,
             ];
-        }
-
-        // tambahkan pekerjaan di DB yang tidak ada di default
-        foreach ($pekerjaanGrouped as $jenis => $jumlah) {
-            if (!in_array($jenis, $defaultPekerjaan)) {
-                $pekerjaanFinal[] = [
-                    'jenis' => $jenis,
-                    'jumlah' => $jumlah,
-                ];
-            }
         }
 
         // default pendidikan (sesuaikan dengan kebutuhan; akan ditambah jika ada lainnya)
@@ -312,39 +291,39 @@ class LaporanMonografi extends Controller
 
         // siapkan struktur berdasarkan enum KategoriUsaha + SubkategoriUsaha::byKategori
         $usahaByKategori = [];
-        foreach (KategoriUsaha::cases() as $kategoriEnum) {
-            $key = $kategoriEnum->value; // disimpan di DB
+        foreach (KategoriUsaha::pluck('name', 'id')->toArray() as $kategori_usaha_id => $name) {
+            $key = $name; // disimpan di DB
             $usahaByKategori[$key] = [
-                'label' => $kategoriEnum->getLabel(),
+                'label' => $name,
                 'total' => 0,
                 'sub' => [],
             ];
 
             // byKategori bisa menerima enum instance atau string tergantung implementasi.
             // Jika byKategori menerima string, ganti $kategoriEnum menjadi $kategoriEnum->value.
-            $subcases = SubkategoriUsaha::byKategori($kategoriEnum);
-            foreach ($subcases as $subcase) {
-                $usahaByKategori[$key]['sub'][$subcase->value] = [
-                    'label' => $subcase->getLabel(),
+            $subcases = SubkategoriUsaha::where('kategori_usaha_id', $kategori_usaha_id)->pluck('name', 'id')->toArray();
+            foreach ($subcases as $sub_id => $name) {
+                $usahaByKategori[$key]['sub'][$name] = [
+                    'label' => $name,
                     'total' => 0,
                 ];
             }
         }
 
         // ambil data usaha dari DB (filter RW/RT jika perlu)
-        $usahas = \App\Models\Usaha::select(['kategori', 'subkategori'])
-            ->when($type === 'rw' && $id, fn($q) => $q->where('rw_id', $id))
-            ->when($type === 'rt' && $id, fn($q) => $q->where('rt_id', $id))
+        $usahas = Usaha::select(['kategori_usaha_id', 'subkategori_usaha_id', 'rw_id', 'rt_id'])
+            ->when($wilayah === 'rw' && $id !== null, fn($q) => $q->where('rw_id', $id))
+            ->when($wilayah === 'rt' && $id !== null, fn($q) => $q->where('rt_id', $id))
             ->get();
 
         // masukkan data DB ke struktur (juga accept kategori/subkategori yang tidak ada di enum)
-        foreach ($usahas as $u) {
-            $cat = $u->kategori;
-            $sub = $u->subkategori;
+        foreach ($usahas as $usaha) {
+            $cat = $usaha->kategoriUsaha->name;
+            $sub = $usaha->subkategoriUsaha->name;
 
-            $usahaByKategori[$cat->value]['total']++;
+            $usahaByKategori[$cat]['total']++;
 
-            $usahaByKategori[$cat->value]['sub'][$sub->value]['total']++;
+            $usahaByKategori[$cat]['sub'][$sub]['total']++;
         }
 
         // ===========================
@@ -353,38 +332,38 @@ class LaporanMonografi extends Controller
 
         // siapkan struktur berdasarkan enum KategoriFasilitas + SubkategoriFasilitas::byKategori
         $fasilitasByKategori = [];
-        foreach (KategoriFasilitas::cases() as $kategoriEnum) {
-            $key = $kategoriEnum->value;
+        foreach (KategoriFasilitas::pluck('name', 'id')->toArray() as $kategoriFasilitasId => $name) {
+            $key = $name;
             $fasilitasByKategori[$key] = [
-                'label' => $kategoriEnum->getLabel(),
+                'label' => $name,
                 'total' => 0,
                 'sub' => [],
             ];
 
             // panggil byKategori dengan enum instance (atau ->value jika signature byKategori membutuhkan string)
-            $subcases = SubkategoriFasilitas::byKategori($kategoriEnum);
-            foreach ($subcases as $subcase) {
-                $fasilitasByKategori[$key]['sub'][$subcase->value] = [
-                    'label' => $subcase->getLabel(),
+            $subcases = SubkategoriFasilitas::where('kategori_fasilitas_id', $kategoriFasilitasId)->pluck('name', 'id')->toArray();
+            foreach ($subcases as $sub_id => $name) {
+                $fasilitasByKategori[$key]['sub'][$name] = [
+                    'label' => $name,
                     'total' => 0,
                 ];
             }
         }
 
         // ambil data fasilitas dari DB (filter RW/RT jika perlu)
-        $fasilitass = \App\Models\Fasilitas::select(['kategori', 'subkategori'])
-            ->when($type === 'rw' && $id, fn($q) => $q->where('rw_id', $id))
-            ->when($type === 'rt' && $id, fn($q) => $q->where('rt_id', $id))
+        $fasilitass = \App\Models\Fasilitas::select(['kategori_fasilitas_id', 'subkategori_fasilitas_id'])
+            ->when($wilayah === 'rw' && $id, fn($q) => $q->where('rw_id', $id))
+            ->when($wilayah === 'rt' && $id, fn($q) => $q->where('rt_id', $id))
             ->get();
 
         // masukkan data DB ke struktur (juga accept kategori/subkategori yang tidak ada di enum)
         foreach ($fasilitass as $f) {
-            $cat = $f->kategori;
-            $sub = $f->subkategori;
+            $cat = $f->kategoriFasilitas->name;
+            $sub = $f->subkategoriFasilitas->name;
 
-            $fasilitasByKategori[$cat->value]['total']++;
+            $fasilitasByKategori[$cat]['total']++;
 
-            $fasilitasByKategori[$cat->value]['sub'][$sub->value]['total']++;
+            $fasilitasByKategori[$cat]['sub'][$sub]['total']++;
         }
 
         // Susun $data final (sama struktur dengan contoh static-mu)
@@ -410,94 +389,5 @@ class LaporanMonografi extends Controller
         ];
 
         return $data;
-    }
-
-    public static function test()
-    {
-        // format data
-
-        // $data = [
-        //     'jumlah_kepala_keluarga' => Keluarga::count(),
-        //     'total_L' => Penduduk::where('jenis_kelamin', JenisKelamin::L->value)->count(),
-        //     'total_P' => Penduduk::where('jenis_kelamin', JenisKelamin::P->value)->count(),
-        //     'total_umur' => Penduduk::count(),
-        //     'total_pekerjaan' => 500,
-        //     'total_pendidikan' => 500,
-        //     'total_agama' => Penduduk::count(),
-        //     'total_perkawinan' => Penduduk::count(),
-        //     'penduduk_umur' => [
-        //         ['kelompok' => '0 s/d 4', 'L' => 432, 'P' => 409],
-        //         ['kelompok' => '5 s/d 9', 'L' => 474, 'P' => 509],
-        //         ['kelompok' => '10 s/d 14', 'L' => 496, 'P' => 482],
-        //         ['kelompok' => '15 s/d 19', 'L' => 474, 'P' => 501],
-        //         ['kelompok' => '20 s/d 24', 'L' => 474, 'P' => 501],
-        //         ['kelompok' => '25 s/d 29', 'L' => 474, 'P' => 501],
-        //         ['kelompok' => '30 s/d 34', 'L' => 474, 'P' => 501],
-        //         ['kelompok' => '35 s/d 39', 'L' => 474, 'P' => 501],
-        //         ['kelompok' => '40 s/d 44', 'L' => 474, 'P' => 501],
-        //         ['kelompok' => '45 s/d 49', 'L' => 474, 'P' => 501],
-        //         ['kelompok' => '50 s/d 54', 'L' => 474, 'P' => 501],
-        //         ['kelompok' => '55 s/d 59', 'L' => 474, 'P' => 501],
-        //         ['kelompok' => '60 s/d 65', 'L' => 474, 'P' => 501],
-        //         ['kelompok' => '65 keatas', 'L' => 474, 'P' => 501],
-        //     ],
-        //     'pekerjaan' => [
-        //         ['jenis' => 'Petani Sendiri', 'jumlah' => 190],
-        //         ['jenis' => 'Buruh Tani', 'jumlah' => 560],
-        //         ['jenis' => 'Nelayan', 'jumlah' => 155],
-        //         ['jenis' => 'Pengusaha', 'jumlah' => 830],
-        //         ['jenis' => 'Buruh Industri', 'jumlah' => 735],
-        //         ['jenis' => 'Buruh Bangunan', 'jumlah' => 735],
-        //         ['jenis' => 'Dagang', 'jumlah' => 735],
-        //         ['jenis' => 'Pengangkutan', 'jumlah' => 735],
-        //         ['jenis' => 'ASN', 'jumlah' => 735],
-        //         ['jenis' => 'Polri', 'jumlah' => 735],
-        //         ['jenis' => 'TNI', 'jumlah' => 735],
-        //         ['jenis' => 'Pensiunan', 'jumlah' => 735],
-        //         ['jenis' => 'Lain-lain', 'jumlah' => 735],
-        //     ],
-        //     'pendidikan' => [
-        //         ['jenjang' => 'Perguruan Tinggi', 'jumlah' => 1022],
-        //         ['jenjang' => 'Tamat Akademi', 'jumlah' => 551],
-        //         ['jenjang' => 'Tamat SLTA', 'jumlah' => 1531],
-        //         ['jenjang' => 'Tamat SLTP', 'jumlah' => 1110],
-        //         ['jenjang' => 'Tamat SD', 'jumlah' => 752],
-        //         ['jenjang' => 'Tidak Tamat SD', 'jumlah' => 531],
-        //         ['jenjang' => 'Belum Tamat SD', 'jumlah' => 531],
-        //         ['jenjang' => 'Tidak Sekolah', 'jumlah' => 154],
-        //     ],
-        //     'agama' => [
-        //         ['agama' => 'Islam', 'jumlah' => 7985],
-        //         ['agama' => 'Kriten', 'jumlah' => 395],
-        //         ['agama' => 'Katolik', 'jumlah' => 191],
-        //         ['agama' => 'Hindu', 'jumlah' => 10],
-        //         ['agama' => 'Buddha', 'jumlah' => 5],
-        //         ['agama' => 'Konghucu', 'jumlah' => 5],
-        //         ['agama' => 'Lainnya', 'jumlah' => 5],
-        //     ],
-        //     'wni_keturunan' => [
-        //         ['keturunan' => 'Cina RRC', 'L' => 0, 'P' => 0],
-        //         ['keturunan' => 'Belanda', 'L' => 0, 'P' => 0],
-        //         ['keturunan' => 'Arab', 'L' => 0, 'P' => 0],
-        //         ['keturunan' => 'India', 'L' => 0, 'P' => 0],
-        //     ],
-        //     'nikah' => [
-        //         ['status' => 'Belum Kawin', 'jumlah' => 7985],
-        //         ['status' => 'Kawin', 'jumlah' => 7985],
-        //         ['status' => 'Cerai Hidup', 'jumlah' => 7985],
-        //         ['status' => 'Cerai Mati', 'jumlah' => 7985],
-        //     ],
-        // ];
-
-
-        // wni_keturunan: jika kamu tidak punya data, tetap tampilkan default dengan 0
-        // $wni_keturunan = [
-        //     ['keturunan' => 'Cina RRC', 'L' => 0, 'P' => 0],
-        //     ['keturunan' => 'Belanda', 'L' => 0, 'P' => 0],
-        //     ['keturunan' => 'Arab', 'L' => 0, 'P' => 0],
-        //     ['keturunan' => 'India', 'L' => 0, 'P' => 0],
-        // ];
-
-        // return self::getData();
     }
 }

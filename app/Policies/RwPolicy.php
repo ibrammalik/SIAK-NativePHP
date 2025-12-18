@@ -45,7 +45,7 @@ class RWPolicy
      */
     public function update(User $user, RW $rW): bool
     {
-        if ($user->isSuperAdmin() || $user->isKelurahan()) return true;
+        if ($user->isSuperAdmin() || $user->isKelurahan() || $user->isRW()) return true;
         return false;
     }
 

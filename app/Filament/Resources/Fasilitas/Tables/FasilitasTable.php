@@ -16,10 +16,14 @@ class FasilitasTable
         return $table
             ->columns([
                 TextColumn::make('nama')
-                    ->label('Nama Fasilitas')
+                    ->label('Nama')
                     ->searchable(),
 
-                TextColumn::make('kategori')
+                TextColumn::make('kategoriFasilitas.name')
+                    ->label('Kategori')
+                    ->searchable(),
+
+                TextColumn::make('subkategoriFasilitas.name')
                     ->badge()
                     ->searchable(),
 
@@ -32,15 +36,6 @@ class FasilitasTable
                     ->label('RT')
                     ->numeric()
                     ->sortable(),
-
-                TextColumn::make('subkategori')
-                    ->badge()
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                TextColumn::make('subkategori_lainnya')
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('alamat')
                     ->searchable()

@@ -249,7 +249,7 @@
                 <tr style="background: #f3f3f3;">
                     <th>No</th>
                     <th>Kategori</th>
-                    <th colspan="2" style="width: 160px;">Jumlah</th>
+                    <th style="width: 160px;">Jumlah</th>
                 </tr>
             </thead>
             <tbody>
@@ -261,8 +261,6 @@
                     <tr>
                         <td>{{ $no++ }}.</td>
                         <td style="text-align:left; font-weight:bold;" colspan="2">{{ $kategori['label'] }}</td>
-                        <td style="font-weight:bold; width: 80px" rowspan="{{ count($kategori['sub']) + 1 }}">
-                            {{ $kategori['total'] }}</td>
                     </tr>
 
                     {{-- SUBKATEGORI --}}
@@ -277,7 +275,7 @@
 
                 {{-- TOTAL KESELURUHAN --}}
                 <tr>
-                    <td colspan="3" style="font-weight:bold;">Total</td>
+                    <td colspan="2" style="font-weight:bold;">Total</td>
                     <td style="font-weight:bold; width: 80px;">{{ $data['total_usaha'] }}</td>
                 </tr>
 
@@ -292,7 +290,7 @@
                 <tr style="background: #f3f3f3;">
                     <th>No</th>
                     <th>Kategori</th>
-                    <th colspan="2" style="width: 160px;">Jumlah</th>
+                    <th style="width: 160px;">Jumlah</th>
                 </tr>
             </thead>
             <tbody>
@@ -304,8 +302,6 @@
                     <tr>
                         <td>{{ $no++ }}.</td>
                         <td style="text-align:left; font-weight:bold;" colspan="2">{{ $kategori['label'] }}</td>
-                        <td style="font-weight:bold; width: 80px;" rowspan="{{ count($kategori['sub']) + 1 }}">
-                            {{ $kategori['total'] }}</td>
                     </tr>
 
                     {{-- SUBKATEGORI --}}
@@ -320,7 +316,7 @@
 
                 {{-- TOTAL KESELURUHAN --}}
                 <tr>
-                    <td colspan="3" style="font-weight:bold;">Total</td>
+                    <td colspan="2" style="font-weight:bold;">Total</td>
                     <td style="font-weight:bold; width: 80px;">{{ $data['total_fasilitas'] }}</td>
                 </tr>
 
