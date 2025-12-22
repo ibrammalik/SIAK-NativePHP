@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>{{ $title }} - SIAK {{ $nama_kelurahan }}</title>
+    <link rel="icon" type="image/png" href="{{ asset('favicon.ico') }}">
 
     <!-- Styles / Scripts -->
     <link href="{{ asset('css/fontawesome.css') }}" rel="stylesheet" />

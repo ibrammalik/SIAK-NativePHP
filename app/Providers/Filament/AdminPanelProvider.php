@@ -99,6 +99,7 @@ class AdminPanelProvider extends PanelProvider
                     ->url('https://wa.me/62895341250608')
                     ->icon('heroicon-o-phone')
                     ->openUrlInNewTab(),
-            ]);
+            ])
+            ->favicon(asset('favicon.ico'));
     }
 }
