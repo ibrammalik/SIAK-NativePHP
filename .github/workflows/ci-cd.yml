@@ -23,5 +23,5 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -o ProxyCommand='cloudflared access tcp --hostname %h' ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             cd ${{ secrets.DESTINATION }}
-            bash ./prod/run.sh
+            bash run.sh
           EOF
