@@ -1,87 +1,192 @@
-version: "3.9"
+# Docker Compose setup for local and production (Traefik) with FrankenPHP
+# - Build a single image and reuse it for web, worker, and scheduler services
+# - For production behind Traefik, set labels and SERVER_NAME appropriately
+
+x-env: &default-env
+    env_file:
+        - .env
+
+x-volumes: &laravel-volumes
+    volumes:
+        - ./.storage/logs/:/app/storage/logs
+        - ./.storage/app/:/app/storage/app
+        - ./.storage/framework/:/app/storage/framework
+# helper map to merge env and volumes in one << per service
+x-common: &common
+    <<: [*default-env, *laravel-volumes]
+
+name: siak_${APP_ENV}
 
 services:
     app:
-        image: dunglas/frankenphp:php8.3
-        container_name: laravel-octane
-        restart: unless-stopped
-        working_dir: /app
-        volumes:
-            - .:/app
-        env_file:
-            - .env
-        command: >
-            sh -c "
-            php artisan migrate --force &&
-            php artisan filament:optimize &&
-            php artisan optimize &&
-            php artisan octane:start
-            --server=frankenphp
-            --host=0.0.0.0
-            --port=8000
-            --workers=2
-            "
-        networks:
-            - proxy
+        container_name: siak_web_${APP_ENV}
+        image: siak:frankenphp
+        pull_policy: never
+        build:
+            context: ${CONTEXT_LOCATION:-.}
+            dockerfile: docker/Dockerfile
+            target: frankenphp
+            args:
+                APP_ENV: ${APP_ENV:-production}
+        <<: *laravel-volumes
+        #
         labels:
             - traefik.enable=true
-
-            # HTTP
-            - traefik.http.routers.${APP_NAME}.rule=Host(`${APP_URL}`)
-            - traefik.http.routers.${APP_NAME}.entrypoints=web
-
-            # HTTPS
-            - traefik.http.routers.${APP_NAME}-https.rule=Host(`${APP_URL}`)
-            - traefik.http.routers.${APP_NAME}-https.entrypoints=websecure
-            - traefik.http.routers.${APP_NAME}-https.tls=true
-            - traefik.http.routers.${APP_NAME}-https.tls.certresolver=cloudflare
-
-            # Service
-            - traefik.http.services.${APP_NAME}.loadbalancer.server.port=8000
-
-    db:
-        image: mysql:8.4
-        container_name: mysql
-        restart: unless-stopped
+            - traefik.http.routers.siak_${APP_ENV}-https.rule=Host(`${APP_DOMAIN}`)
+            - traefik.http.routers.siak_${APP_ENV}-https.tls=true
+            - traefik.http.services.siak_${APP_ENV}-https.loadbalancer.server.port=80
+            - traefik.http.routers.siak_${APP_ENV}-https.tls.certresolver=cloudflare
+            - traefik.http.routers.siak_${APP_ENV}-https.entrypoints=websecure
+            - traefik.http.routers.siak_${APP_ENV}.middlewares=forward-auth
+            - traefik.http.middlewares.forward-auth.headers.customrequestheaders.X-Forwarded-Proto=https
+            - traefik.http.middlewares.forward-auth.headers.customrequestheaders.X-Forwarded-Host=${APP_URL}
         environment:
-            MYSQL_DATABASE: ${DB_DATABASE}
-            MYSQL_USER: ${DB_USERNAME}
-            MYSQL_PASSWORD: ${DB_PASSWORD}
-            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-        volumes:
-            - mysql-data:/var/lib/mysql
-
-    redis:
-        image: redis:7-alpine
-        container_name: redis
+            SERVER_NAME: ${APP_DOMAIN:-:80}
+            SERVER_ROOT: /app/public
+        depends_on:
+            db:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        networks:
+            - internal
+            - proxy # uncomment in production
         restart: unless-stopped
+        command:
+            [
+                "php",
+                "artisan",
+                "octane:frankenphp",
+                "--host=0.0.0.0",
+                "--port=80",
+                "--workers=8",
+                "--log-level=info",
+            ]
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    'curl -fsS http://127.0.0.1:80/up || { rc=$$?; echo "[healthcheck] GET /up failed with code $$rc" >&2; exit 1; }',
+                ]
+            interval: 15s
+            timeout: 5s
+            retries: 20
+            start_period: 10s
 
-    queue:
-        image: dunglas/frankenphp:php8.3
-        container_name: laravel-queue
+    worker:
+        container_name: siak_worker_${APP_ENV}
+        image: siak:worker
+        pull_policy: never
+        build:
+            context: ${CONTEXT_LOCATION:-.}
+            dockerfile: docker/Dockerfile
+            target: worker
+            args:
+                APP_ENV: ${APP_ENV:-production}
+        <<: *common
+        # command: ["php", "artisan", "horizon"]
+        command: ["php", "artisan", "queue:work", "--tries=3", "--sleep=1"]
+        depends_on:
+            db:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        networks:
+            - internal
         restart: unless-stopped
-        working_dir: /app
-        volumes:
-            - .:/app
-        env_file:
-            - .env
-        command: php artisan queue:work --sleep=1 --tries=3
+        healthcheck:
+            test: ["CMD-SHELL", "php artisan inspire >/dev/null 2>&1 || exit 1"]
+            interval: 15s
+            timeout: 2s
+            retries: 10
 
     scheduler:
-        image: dunglas/frankenphp:php8.3
-        container_name: laravel-scheduler
+        container_name: siak_scheduler_${APP_ENV}
+        image: siak:worker
+        <<: *laravel-volumes
+        command: ["php", "artisan", "schedule:work"]
+        depends_on:
+            db:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        networks:
+            - internal
         restart: unless-stopped
-        working_dir: /app
-        volumes:
-            - .:/app
-        env_file:
-            - .env
-        command: >
-            sh -c "while true; do php artisan schedule:run; sleep 60; done"
+        healthcheck:
+            test: ["CMD-SHELL", "php artisan inspire >/dev/null 2>&1 || exit 1"]
+            interval: 15s
+            timeout: 2s
+            retries: 10
 
-volumes:
-    mysql-data:
+    # pulse_check:
+    #   container_name: siak_pulse_check_${APP_ENV}
+    #   image: siak:worker
+    #   <<: *laravel-volumes
+    #   command: ["php", "artisan", "pulse:check"]
+    #   depends_on:
+    #     - redis
+    #     - db
+    #   networks:
+    #     - internal
+    #   restart: unless-stopped
+    #   healthcheck:
+    #     test: ["CMD-SHELL", "php artisan inspire >/dev/null 2>&1 || exit 1"]
+    #     interval: 15s
+    #     timeout: 2s
+    #     retries: 10
+
+    # pulse_work:
+    #   container_name: siak_pulse_work_${APP_ENV}
+    #   image: siak:worker
+    #   <<: *laravel-volumes
+    #   command: ["php", "artisan", "pulse:work"]
+    #   depends_on:
+    #     - redis
+    #     - db
+    #   networks:
+    #     - internal
+    #   restart: unless-stopped
+    #   healthcheck:
+    #     test: ["CMD-SHELL", "php artisan inspire >/dev/null 2>&1 || exit 1"]
+    #     interval: 15s
+    #     timeout: 2s
+    #     retries: 10
+
+    db:
+        image: mysql:8.2
+        container_name: siak_db_${APP_ENV}
+        <<: *default-env
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE:-laravel}
+            MYSQL_USER: ${DB_USERNAME:-laravel}
+            MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secret}
+        # ports:
+        # - "${DB_EXPOSE_PORT:-13306}:3306" # change or remove in production
+        volumes:
+            - ./.mysql-db/:/var/lib/mysql
+        networks:
+            - internal
+        restart: always
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+            timeout: 20s
+            retries: 10
+            start_period: 30s
+
+    redis:
+        image: redis:alpine
+        container_name: siak_redis_${APP_ENV}
+        volumes:
+            - .redis/redis:/data
+        networks:
+            - internal
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+        restart: unless-stopped
 
 networks:
+    internal:
     proxy:
         external: true
