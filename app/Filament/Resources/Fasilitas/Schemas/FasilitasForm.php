@@ -122,7 +122,21 @@ class FasilitasForm
                 Textarea::make('alamat')
                     ->columnSpanFull()
                     ->required()
-                    ->hint('Alamat lengkap fasilitas')
+                    ->hint('Alamat lengkap fasilitas'),
+
+                TextInput::make('nama_pengelola')
+                    ->label('Nama Pengelola')
+                    ->nullable()
+                    ->hint('Nama penanggung jawab atau pengelola fasilitas')
+                    ->placeholder('Contoh: Budi Santoso'),
+
+                TextInput::make('nomor_pengelola')
+                    ->label('Nomor Pengelola')
+                    ->nullable()
+                    ->tel()
+                    ->hint('Nomor HP yang dapat dihubungi')
+                    ->placeholder('Contoh: 081234567890')
+                    ->rules(['regex:/^[0-9+\-\s]+$/']),
             ]);
     }
 }

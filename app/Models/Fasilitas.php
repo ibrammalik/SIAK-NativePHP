@@ -13,6 +13,8 @@ class Fasilitas extends Model
         'subkategori_fasilitas_id',
         'nama',
         'alamat',
+        'nama_pengelola',
+        'nomor_pengelola',
         'rw_id',
         'rt_id',
     ];
