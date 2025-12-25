@@ -2,12 +2,14 @@
 
 namespace App\Filament\Resources\RTS\Schemas;
 
+use App\Filament\Resources\Penduduks\Schemas\PendudukForm;
 use App\Models\RT;
 use App\Models\RW;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Unique;
 
 class RTForm
@@ -21,7 +23,7 @@ class RTForm
                 Select::make('rw_id')
                     ->label('Pilih RW')
                     ->relationship('rw', 'nomor', modifyQueryUsing: function (Builder $query) {
-                        $user = auth()->user();
+                        $user = Auth::user();
                         if ($user->isRW()) {
                             $query->where('id', $user->rw_id);
                         }
@@ -85,7 +87,8 @@ class RTForm
                                 $fail('Penduduk ini sudah terdaftar sebagai Ketua RW.');
                             }
                         };
-                    }),
+                    })
+                    ->createOptionForm(PendudukForm::getFormSchema()),
             ]);
     }
 }
