@@ -2,12 +2,14 @@
 
 namespace App\Filament\Resources\RTS\Schemas;
 
+use App\Filament\Resources\Penduduks\Schemas\PendudukForm;
 use App\Models\RT;
 use App\Models\RW;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Unique;
 
 class RTForm
@@ -21,7 +23,7 @@ class RTForm
                 Select::make('rw_id')
                     ->label('Pilih RW')
                     ->relationship('rw', 'nomor', modifyQueryUsing: function (Builder $query) {
-                        $user = auth()->user();
+                        $user = Auth::user();
                         if ($user->isRW()) {
                             $query->where('id', $user->rw_id);
                         }
@@ -85,6 +87,22 @@ class RTForm
                                 $fail('Penduduk ini sudah terdaftar sebagai Ketua RW.');
                             }
                         };
+                    })
+                    ->createOptionModalHeading(function (?RT $record) {
+                        return $record
+                            ? "Buat Ketua RT {$record->nomor} / RW {$record->rw->nomor}"
+                            : 'Buat Ketua RT';
+                    })
+                    ->createOptionForm(PendudukForm::getFormSchema())
+                    ->createOptionUsing(function (array $data) {
+                        $penduduk = \App\Models\Penduduk::create($data);
+
+                        if (($data['shdk'] ?? null) === 'Kepala' && !empty($data['keluarga_id'])) {
+                            \App\Models\Keluarga::where('id', $data['keluarga_id'])
+                                ->update(['kepala_id' => $penduduk->id]);
+                        }
+
+                        return $penduduk->id;
                     }),
             ]);
     }

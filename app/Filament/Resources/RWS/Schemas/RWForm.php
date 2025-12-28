@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\RWS\Schemas;
 
+use App\Filament\Resources\Penduduks\Schemas\PendudukForm;
 use App\Models\RT;
 use App\Models\RW;
 use Filament\Forms\Components\Select;
@@ -34,9 +35,26 @@ class RWForm
                     ->hiddenOn('create')
                     ->preload()
                     ->searchable()
+                    ->getSearchResultsUsing(function (string $search) {
+                        return \App\Models\Penduduk::query()
+                            ->where(function ($query) use ($search) {
+                                $query
+                                    ->where('nama', 'like', "%{$search}%")
+                                    ->orWhere('nik', 'like', "%{$search}%");
+                            })
+                            ->limit(50)
+                            ->pluck('nama', 'id')
+                            ->map(fn($nama, $id) => [
+                                'id' => $id,
+                                'label' => \App\Models\Penduduk::find($id)->nama
+                                    . ' — '
+                                    . \App\Models\Penduduk::find($id)->nik,
+                            ])
+                            ->pluck('label', 'id');
+                    })
                     ->hintIcon('heroicon-m-user-circle')
                     ->hintIconTooltip('Pilih penduduk yang akan dijadikan Ketua RW.')
-                    ->helperText('Pastikan penduduk sudah terdaftar di sistem penduduk.')
+                    ->helperText('Pilih Ketua RW dengan Nama atau NIK. Jika belum ada, daftarkan dengan tombol + di sebelah kanan kolom.')
                     ->columnSpanFull()
                     ->rule(function (callable $get) {
                         return function (string $attribute, $value, \Closure $fail) use ($get) {
@@ -58,6 +76,18 @@ class RWForm
                                 $fail('Penduduk ini sudah terdaftar sebagai Ketua RT.');
                             }
                         };
+                    })
+                    ->createOptionModalHeading(fn($get) => "Buat Ketua RW {$get('nomor')}")
+                    ->createOptionForm(PendudukForm::getFormSchema())
+                    ->createOptionUsing(function (array $data) {
+                        $penduduk = \App\Models\Penduduk::create($data);
+
+                        if (($data['shdk'] ?? null) === 'Kepala' && !empty($data['keluarga_id'])) {
+                            \App\Models\Keluarga::where('id', $data['keluarga_id'])
+                                ->update(['kepala_id' => $penduduk->id]);
+                        }
+
+                        return $penduduk->id;
                     }),
             ]);
     }

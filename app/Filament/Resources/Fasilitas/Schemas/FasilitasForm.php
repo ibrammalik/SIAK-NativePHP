@@ -11,6 +11,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class FasilitasForm
 {
@@ -87,7 +88,7 @@ class FasilitasForm
                 Select::make('rw_id')
                     ->label('RW')
                     ->relationship('rw', 'nomor', modifyQueryUsing: function (Builder $query) {
-                        $user = auth()->user();
+                        $user = Auth::user();
                         if ($user->isRW() || $user->isRT()) {
                             $query->where('id', $user->rw_id);
                         }
@@ -107,7 +108,7 @@ class FasilitasForm
                     ->searchable()
                     ->required()
                     ->relationship('rt', 'nomor', modifyQueryUsing: function (Builder $query, $get) {
-                        $user = auth()->user();
+                        $user = Auth::user();
                         $query->where('rw_id', $get('rw_id'));
 
                         if ($user->isRT()) {
@@ -121,7 +122,21 @@ class FasilitasForm
                 Textarea::make('alamat')
                     ->columnSpanFull()
                     ->required()
-                    ->hint('Alamat lengkap fasilitas')
+                    ->hint('Alamat lengkap fasilitas'),
+
+                TextInput::make('nama_pengelola')
+                    ->label('Nama Pengelola')
+                    ->nullable()
+                    ->hint('Nama penanggung jawab atau pengelola fasilitas')
+                    ->placeholder('Contoh: Budi Santoso'),
+
+                TextInput::make('nomor_pengelola')
+                    ->label('Nomor Pengelola')
+                    ->nullable()
+                    ->tel()
+                    ->hint('Nomor HP yang dapat dihubungi')
+                    ->placeholder('Contoh: 081234567890')
+                    ->rules(['regex:/^[0-9+\-\s]+$/']),
             ]);
     }
 }

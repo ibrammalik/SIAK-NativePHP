@@ -20,6 +20,8 @@ class PenduduksRelationManager extends RelationManager
 
     protected static bool $isLazy = false;
 
+    protected static ?string $title = 'Anggota Keluarga';
+
     public function isReadOnly(): bool
     {
         return false;
@@ -58,7 +60,7 @@ class PenduduksRelationManager extends RelationManager
                     ->label('Agama')
                     ->toggleable(),
 
-                TextColumn::make('pendidikan')
+                TextColumn::make('pendidikan.name')
                     ->label('Pendidikan')
                     ->toggleable(),
 

@@ -27,6 +27,14 @@ class FasilitasTable
                     ->badge()
                     ->searchable(),
 
+                TextColumn::make('nama_pengelola')
+                    ->label('Nama Pengelola')
+                    ->searchable(),
+
+                TextColumn::make('nomor_pengelola')
+                    ->label('Nomor Pengelola')
+                    ->searchable(),
+
                 TextColumn::make('rw.nomor')
                     ->label('RW')
                     ->numeric()

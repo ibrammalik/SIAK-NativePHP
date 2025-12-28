@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Filament\Resources\Pekerjaans;
+namespace App\Filament\Resources\KategoriPendidikans;
 
-use App\Filament\Resources\Pekerjaans\Pages\ManagePekerjaans;
-use App\Models\Pekerjaan;
+use App\Filament\Resources\KategoriPendidikans\Pages\ManageKategoriPendidikans;
+use App\Models\KategoriPendidikan;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -17,21 +17,25 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use UnitEnum;
 
-class PekerjaanResource extends Resource
+class KategoriPendidikanResource extends Resource
 {
-    protected static ?string $model = Pekerjaan::class;
+    protected static ?string $model = KategoriPendidikan::class;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-    protected static string | UnitEnum | null $navigationGroup = 'Master Data';
-    protected static ?string $navigationLabel = 'Kategori Pekerjaan';
-    protected static ?string $pluralModelLabel = 'Kategori Pekerjaan';
-    protected static ?string $modelLabel = 'Kategori Pekerjaan';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Master Data';
+    protected static ?string $navigationLabel = 'Kategori Pendidikan';
+    protected static ?string $pluralModelLabel = 'Kategori Pendidikan';
+    protected static ?string $modelLabel = 'Kategori Pendidikan';
+
+    protected static ?string $recordTitleAttribute = 'name';
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
                 TextInput::make('name')
-                    ->label('Kategori')
+                    ->label('Kategori Pendidikan')
                     ->columnSpanFull()
                     ->required(),
             ]);
@@ -40,6 +44,7 @@ class PekerjaanResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->recordTitleAttribute('name')
             ->columns([
                 TextColumn::make('name')
                     ->label('Kategori')
@@ -70,7 +75,7 @@ class PekerjaanResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ManagePekerjaans::route('/'),
+            'index' => ManageKategoriPendidikans::route('/'),
         ];
     }
 }

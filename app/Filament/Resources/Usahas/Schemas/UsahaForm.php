@@ -11,6 +11,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class UsahaForm
 {
@@ -82,19 +83,26 @@ class UsahaForm
                     ->columnSpanFull()
                     ->required()
                     ->hint('Nama usaha sesuai dengan dokumen resmi jika ada')
-                    ->helperText('Contoh: Toko Sumber Makmur'),
+                    ->placeholder('Contoh: Toko Sumber Makmur'),
 
                 TextInput::make('nama_pemilik')
                     ->label('Nama Pemilik')
-                    ->columnSpanFull()
                     ->required()
                     ->hint('Nama pemilik usaha')
-                    ->helperText('Contoh: Budi Santoso'),
+                    ->placeholder('Contoh: Budi Santoso'),
+
+                TextInput::make('nomor_pemilik')
+                    ->label('Nomor Pemilik')
+                    ->required()
+                    ->tel()
+                    ->hint('Nomor HP yang dapat dihubungi')
+                    ->placeholder('Contoh: 081234567890')
+                    ->rules(['regex:/^[0-9+\-\s]+$/']),
 
                 Select::make('rw_id')
                     ->label('RW')
                     ->relationship('rw', 'nomor', modifyQueryUsing: function (Builder $query) {
-                        $user = auth()->user();
+                        $user = Auth::user();
                         if ($user->isRW() || $user->isRT()) {
                             $query->where('id', $user->rw_id);
                         }
@@ -114,7 +122,7 @@ class UsahaForm
                     ->searchable()
                     ->required()
                     ->relationship('rt', 'nomor', modifyQueryUsing: function (Builder $query, $get) {
-                        $user = auth()->user();
+                        $user = Auth::user();
                         $query->where('rw_id', $get('rw_id'));
 
                         if ($user->isRT()) {
