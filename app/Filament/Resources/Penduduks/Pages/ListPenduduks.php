@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources\Penduduks\Pages;
 
+use App\Filament\Exports\PendudukExporter;
 use App\Filament\Imports\PendudukImporter;
 use App\Filament\Resources\Penduduks\PendudukResource;
 use Filament\Actions\CreateAction;
+use Filament\Actions\ExportAction;
 use Filament\Actions\ImportAction;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Support\HtmlString;
@@ -24,7 +26,7 @@ class ListPenduduks extends ListRecords
             ImportAction::make('import_penduduk')
                 ->label('Import Penduduk')
                 ->color('info')
-                ->icon('heroicon-o-document-arrow-up')
+                ->icon('heroicon-o-document-arrow-down')
                 ->importer(PendudukImporter::class)
                 ->modalDescription(function () {
                     return new HtmlString('
@@ -35,6 +37,13 @@ class ListPenduduks extends ListRecords
                         </a>
                     ');
                 }),
+
+            ExportAction::make('export_penduduk')
+                ->label('Export Penduduk')
+                ->color('warning')
+                ->columnMappingColumns(3)
+                ->icon('heroicon-o-document-arrow-up')
+                ->exporter(PendudukExporter::class),
         ];
     }
 }
