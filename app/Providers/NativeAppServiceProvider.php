@@ -17,6 +17,23 @@ class NativeAppServiceProvider implements ProvidesPhpIni
      */
     public function boot(): void
     {
+        try {
+            if (DB::table('kelurahan')->count() === 0) {
+                Artisan::call('db:seed', [
+                    '--class' => 'KelurahanSeeder',
+                    '--force' => true,
+                ]);
+
+                Log::info('KelurahanSeeder berhasil dijalankan otomatis.');
+            }
+        } catch (\Throwable $e) {
+            Log::error('Gagal menjalankan KelurahanSeeder otomatis.', [
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
+        }
+
         Menu::create(
             Menu::file(),
             Menu::edit(),
