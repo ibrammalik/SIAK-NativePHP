@@ -180,21 +180,22 @@ class PenduduksTable
                     ->schema([TextInput::make('usia_min')->numeric()->label('Minimal')])
                     ->query(function (Builder $query, array $data) {
                         return $query->when(
-                            $data['usia_min'],
-                            fn($q, $usiaMin) => $q->whereRaw('TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) >= ?', [$usiaMin])
+                            $data['usia_min'] ?? null,
+                            fn($q, $usiaMin) => $q->whereDate('tanggal_lahir', '<=', now()->subYears((int) $usiaMin))
                         );
                     })
                     ->indicateUsing(fn(array $data) => !empty($data['usia_min']) ? ['Usia ≥ ' . $data['usia_min']] : []),
 
                 Filter::make('usia_max')
-                    ->schema([TextInput::make('usia_max')->numeric()->label('Maximal')])
+                    ->schema([TextInput::make('usia_max')->numeric()->label('Maksimal')])
                     ->query(function (Builder $query, array $data) {
                         return $query->when(
-                            $data['usia_max'],
-                            fn($q, $usiaMax) => $q->whereRaw('TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) >= ?', [$usiaMax])
+                            $data['usia_max'] ?? null,
+                            fn($q, $usiaMax) => $q->whereDate('tanggal_lahir', '>=', now()->subYears((int) $usiaMax))
                         );
                     })
                     ->indicateUsing(fn(array $data) => !empty($data['usia_max']) ? ['Usia ≤ ' . $data['usia_max']] : []),
+
 
                 // Filter for Tanggal Lahir Minimal
                 Filter::make('tanggal_lahir_min')

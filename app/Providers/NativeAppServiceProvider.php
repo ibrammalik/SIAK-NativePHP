@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 use Native\Desktop\Facades\Window;
 use Native\Desktop\Contracts\ProvidesPhpIni;
 use Native\Desktop\Facades\Menu;
+use Illuminate\Support\Facades\File;
 
 class NativeAppServiceProvider implements ProvidesPhpIni
 {
@@ -17,6 +18,17 @@ class NativeAppServiceProvider implements ProvidesPhpIni
      */
     public function boot(): void
     {
+        try {
+            if (! File::exists(public_path('storage'))) {
+                Artisan::call('storage:link');
+                Log::info('storage:link berhasil dijalankan otomatis.');
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Gagal menjalankan storage:link', [
+                'message' => $e->getMessage(),
+            ]);
+        }
+
         try {
             if (DB::table('kelurahan')->count() === 0) {
                 Artisan::call('db:seed', [

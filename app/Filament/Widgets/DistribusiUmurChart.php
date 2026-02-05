@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Concerns\ResolvesWilayah;
 use App\Models\Penduduk;
+use Carbon\Carbon;
 use Filament\Widgets\ChartWidget;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
 
@@ -29,60 +30,60 @@ class DistribusiUmurChart extends ChartWidget
             $query->where('rt_id', $state['rt']->id);
         }
 
-        $ageGroups = [
-            '0-4',
-            '5-9',
-            '10-14',
-            '15-19',
-            '20-24',
-            '25-29',
-            '30-34',
-            '35-39',
-            '40-44',
-            '45-49',
-            '50-54',
-            '55-59',
-            '60-64',
-            '65+',
+        $penduduks = $query
+            ->select('tanggal_lahir')
+            ->get();
+
+        $groups = [
+            '0-4'   => 0,
+            '5-9'   => 0,
+            '10-14' => 0,
+            '15-19' => 0,
+            '20-24' => 0,
+            '25-29' => 0,
+            '30-34' => 0,
+            '35-39' => 0,
+            '40-44' => 0,
+            '45-49' => 0,
+            '50-54' => 0,
+            '55-59' => 0,
+            '60-64' => 0,
+            '65+'   => 0,
         ];
 
-        $raw = $query
-            ->selectRaw("
-            CASE
-                WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) BETWEEN 0 AND 4 THEN '0-4'
-                WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) BETWEEN 5 AND 9 THEN '5-9'
-                WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) BETWEEN 10 AND 14 THEN '10-14'
-                WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) BETWEEN 15 AND 19 THEN '15-19'
-                WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) BETWEEN 20 AND 24 THEN '20-24'
-                WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) BETWEEN 25 AND 29 THEN '25-29'
-                WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) BETWEEN 30 AND 34 THEN '30-34'
-                WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) BETWEEN 35 AND 39 THEN '35-39'
-                WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) BETWEEN 40 AND 44 THEN '40-44'
-                WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) BETWEEN 45 AND 49 THEN '45-49'
-                WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) BETWEEN 50 AND 54 THEN '50-54'
-                WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) BETWEEN 55 AND 59 THEN '55-59'
-                WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) BETWEEN 60 AND 64 THEN '60-64'
-                ELSE '65+'
-            END AS kategori,
-            COUNT(*) AS total
-        ")
-            ->groupBy('kategori')
-            ->pluck('total', 'kategori')
-            ->toArray();
+        foreach ($penduduks as $p) {
+            if (!$p->tanggal_lahir) {
+                continue;
+            }
 
-        $normalized = [];
-        foreach ($ageGroups as $label) {
-            $normalized[$label] = $raw[$label] ?? 0;
+            $age = Carbon::parse($p->tanggal_lahir)->age;
+
+            match (true) {
+                $age <= 4   => $groups['0-4']++,
+                $age <= 9   => $groups['5-9']++,
+                $age <= 14  => $groups['10-14']++,
+                $age <= 19  => $groups['15-19']++,
+                $age <= 24  => $groups['20-24']++,
+                $age <= 29  => $groups['25-29']++,
+                $age <= 34  => $groups['30-34']++,
+                $age <= 39  => $groups['35-39']++,
+                $age <= 44  => $groups['40-44']++,
+                $age <= 49  => $groups['45-49']++,
+                $age <= 54  => $groups['50-54']++,
+                $age <= 59  => $groups['55-59']++,
+                $age <= 64  => $groups['60-64']++,
+                default     => $groups['65+']++,
+            };
         }
 
         return [
             'datasets' => [
                 [
                     'label' => 'Jumlah Penduduk',
-                    'data' => array_values($normalized),
+                    'data' => array_values($groups),
                 ],
             ],
-            'labels' => array_keys($normalized),
+            'labels' => array_keys($groups),
         ];
     }
 

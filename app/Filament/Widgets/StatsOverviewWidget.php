@@ -25,9 +25,14 @@ class StatsOverviewWidget extends BaseStatsOverviewWidget
         $state = $this->resolveWilayah();
 
         return match ($state['wilayah']) {
-            'rt' => "Statistik RT {$state['rt']->nomor} / RW {$state['rw']->nomor}, Kelurahan {$kelurahan->nama}",
-            'rw' => "Statistik RW {$state['rw']->nomor}, Kelurahan {$kelurahan->nama}",
-            default => "Statistik Kelurahan {$kelurahan->nama}",
+            'rt' => "Statistik RT " . ($state['rt']->nomor ?? 'Contoh')
+                . " / RW " . ($state['rw']->nomor ?? 'Contoh')
+                . ", Kelurahan " . ($kelurahan->nama ?? 'Contoh'),
+
+            'rw' => "Statistik RW " . ($state['rw']->nomor ?? 'Contoh')
+                . ", Kelurahan " . ($kelurahan->nama ?? 'Contoh'),
+
+            default => "Statistik Kelurahan " . ($kelurahan->nama ?? 'Contoh'),
         };
     }
 
@@ -67,8 +72,9 @@ class StatsOverviewWidget extends BaseStatsOverviewWidget
 
         $umurSekarang = now();
         $lansia = (clone $penduduk)
-            ->whereRaw('TIMESTAMPDIFF(YEAR, tanggal_lahir, ?) >= 60', [$umurSekarang])
+            ->whereDate('tanggal_lahir', '<=', now()->subYears(60))
             ->count();
+
         $chart = [1, 1];
 
         return match ($state['wilayah']) {
