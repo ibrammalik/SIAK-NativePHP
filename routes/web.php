@@ -9,6 +9,7 @@ use App\Livewire\Pages\Peta;
 use App\Livewire\Pages\Profil;
 use App\Livewire\Pages\RWOnboarding;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 Route::get('/', Beranda::class)->name('beranda');
 Route::get('/profil', Profil::class)->name('profil');
@@ -22,7 +23,7 @@ Route::get('/rw-onboarding', RWOnboarding::class)->name('rw-onboarding');
 
 
 Route::get('/download/contoh-import', function () {
-  $path = storage_path('app/public/contoh-import-penduduk-v1.xlsx');
+  $path = Storage::disk('extras')->path('contoh-import-penduduk-v1.xlsx');
 
   abort_unless(file_exists($path), 404);
 

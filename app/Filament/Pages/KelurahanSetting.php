@@ -13,6 +13,7 @@ use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
 use BackedEnum;
 use Filament\Forms\Components\FileUpload;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class KelurahanSetting extends Page
@@ -26,8 +27,8 @@ class KelurahanSetting extends Page
 
     public static function canAccess(): bool
     {
-        $user = auth()->user();
-        if ($user->isSuperAdmin() || $user->isKelurahan()) {
+        $user = Auth::user();
+        if ($user->isSuperAdmin()) {
             return true;
         }
         return false;
